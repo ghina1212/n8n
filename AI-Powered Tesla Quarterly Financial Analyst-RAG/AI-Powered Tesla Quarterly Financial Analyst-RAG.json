@@ -1,0 +1,425 @@
+{
+  "name": "RAG",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "REPLACE_AFTER_IMPORT",
+          "mode": "list",
+          "cachedResultName": "Select your Google Drive folder after import"
+        },
+        "event": "fileCreated",
+        "options": {}
+      },
+      "id": "f7f04f4f-5f53-49b1-a036-37b6722e3c7b",
+      "name": "Google Drive Trigger",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1248,
+        864
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "c1ecdfa1-ee41-42b6-89ca-34addd0b8e58",
+      "name": "Download file",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -1024,
+        864
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "YOUR_PINECONE_INDEX",
+          "mode": "list",
+          "cachedResultName": "Select your Pinecone index after import"
+        },
+        "embeddingBatchSize": 1,
+        "options": {
+          "pineconeNamespace": "YOUR_PINECONE_NAMESPACE"
+        }
+      },
+      "id": "ac2ee00e-f65f-423d-8845-a086ae9d4bf8",
+      "name": "Pinecone Vector Store",
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        -800,
+        752
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "dimensions": 1536
+        }
+      },
+      "id": "8aabb033-7186-4a67-84f5-ec4bab5e211a",
+      "name": "Embeddings OpenAI",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -944,
+        1136
+      ]
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "loader": "pdfLoader",
+        "options": {}
+      },
+      "id": "3b0a1765-ad7f-49fa-a10d-586aec45132f",
+      "name": "Default Data Loader",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        -656,
+        976
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseMode": "responseNodes"
+        }
+      },
+      "id": "16bbde75-8fae-405b-b742-97d201585af8",
+      "name": "When chat message received",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -176,
+        848
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "You are an AI assistant specialized in analyzing TSLA quarterly financial reports. The reports are already ingested into a vector store that you access through the \"Answer questions with a vector store\" tool.\n\nRULES:\n1. For EVERY question about Tesla/TSLA, you MUST call the \"Answer questions with a vector store\" tool before answering. Never answer TSLA financial questions from your own memory.\n2. NEVER ask the user to upload, attach, or paste a PDF or its text. The knowledge base already lives in the vector store — there is nothing for the user to upload.\n3. Only state that information is missing if the tool actually returns no relevant content. Trust what the tool returns.\n4. Base answers strictly on the tool results. Include specific figures and clearly label whether each figure is from Q1 or Q2.\n5. Keep responses concise and precise."
+        }
+      },
+      "id": "170e992d-e45c-4f26-90b8-ac18f34de39b",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        240,
+        704
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "e5b3eacb-6c51-47fc-b081-6e11cf2d2275",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        224,
+        976
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "f3c4a2a0-fd1e-49e7-a049-859fc3586d96",
+      "name": "Simple Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        352,
+        976
+      ]
+    },
+    {
+      "parameters": {
+        "description": "=Search the TSLA quarterly financial report knowledge base (Q1/Q2 update decks already ingested into the vector store). Use this to answer any question about Tesla financials, deliveries, production, margins, cash flow, guidance, or management commentary.",
+        "topK": "=10"
+      },
+      "id": "64a0b6b7-7a95-4b1e-9557-e4f6ef183699",
+      "name": "Answer questions with a vector store",
+      "type": "@n8n/n8n-nodes-langchain.toolVectorStore",
+      "typeVersion": 1.1,
+      "position": [
+        576,
+        960
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "ac3f5430-8199-4743-93ce-6f0d5415fd27",
+      "name": "OpenAI Chat Model1",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        464,
+        1248
+      ]
+    },
+    {
+      "parameters": {
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "YOUR_PINECONE_INDEX",
+          "mode": "list",
+          "cachedResultName": "Select your Pinecone index after import"
+        },
+        "options": {
+          "pineconeNamespace": "YOUR_PINECONE_NAMESPACE"
+        }
+      },
+      "id": "099c2e46-31bb-4a0c-be88-32c26d458b96",
+      "name": "Pinecone Vector Store1",
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        144,
+        1216
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "dimensions": 1536
+        }
+      },
+      "id": "11179b59-6c1c-4123-841d-9c326644a2b4",
+      "name": "Embeddings OpenAI1",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -32,
+        1360
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "message": "={{ $json.output }}",
+        "options": {}
+      },
+      "id": "0ec7223c-874a-4ed1-9ba4-fb2df5eb62ef",
+      "name": "Chat",
+      "type": "@n8n/n8n-nodes-langchain.chat",
+      "typeVersion": 1.3,
+      "position": [
+        752,
+        752
+      ]
+    },
+    {
+      "parameters": {
+        "content": "Insert Document From google Drive to Vector Database ",
+        "height": 656,
+        "width": 1104,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1408,
+        672
+      ],
+      "id": "9cd64929-3c4c-4264-a41f-9a36070cb9f5",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "Read From VDB and answer the user queries",
+        "height": 864,
+        "width": 1440,
+        "color": "#3AC7D9"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -224,
+        640
+      ],
+      "id": "9285ac72-93cc-428f-8dd8-093a27d356ef",
+      "name": "Sticky Note1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Drive Trigger": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Answer questions with a vector store": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Answer questions with a vector store",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone Vector Store1": {
+      "ai_vectorStore": [
+        [
+          {
+            "node": "Answer questions with a vector store",
+            "type": "ai_vectorStore",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "nodeGroups": [],
+  "tags": []
+}
